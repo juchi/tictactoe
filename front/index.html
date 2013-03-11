@@ -15,7 +15,7 @@
 		<script type="text/javascript">
 		var playerIndex;
 		var canvas = document.getElementById('canvas');
-		init(canvas);
+		tictactoe.init(canvas);
 
 		var connection = new WebSocket('ws://localhost:8080');
 
@@ -32,7 +32,7 @@
 			message = JSON.parse(message.data);
 			var action = message.type;
 			try {
-				actions[action](message);
+				tictactoe.actions[action](message);
 			} catch (e) {
 				console.log(e);
 			}
@@ -42,7 +42,7 @@
 		$('#canvas').on('click', function(event) {
 			var x = event.pageX - canvas.offsetLeft;
 			var y = event.pageY - canvas.offsetTop;
-			var cellCoords = getCellFromPosition({'x':x, 'y':y});
+			var cellCoords = tictactoe.getCellFromPosition({'x':x, 'y':y});
 
 			var json = {'type': 'move','coords': cellCoords};
 			json = JSON.stringify(json);
