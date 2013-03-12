@@ -1,117 +1,152 @@
 var tictactoe = function() {
-
-	var indexes = [0, 1];
-	var colors = ['blue', 'red'];
-	var shapes = ['cross', 'circle'];
-	var players = [];
-	var playersData = [];
-	var grid = [];
-	var nextTurn = -1;
-	var gameRunning = false;
-
-
-	this.initConnection = function(request){
-		console.log('client connection');
-		if (indexes.length == 0) return;
-		var connection = request.accept(null, request.origin);
-		var index = indexes.shift();
-		players[index] = connection;
+	var game;
 	
-		playersData[index] = {'color':colors.shift(), 'shape':shapes.shift()};
+	var Player = function(socket) {
+		var connection = socket;
+		connection.player = this;
+		
+		this.index = 0;
+		
+		this.sendMessage = function(message) {
+			connection.sendUTF(message);
+		};
+	};
 	
-		var initMessage = {'type':'connection','index':index, 'players':playersData};
-		connection.sendUTF(JSON.stringify(initMessage));
-		broadcast(JSON.stringify({'type':'newplayer', 'players':playersData}), index);
-	
-		if (indexes.length == 0) {
-			newGame();
-		} else {
-			broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
-		}
-	
-		connection.on('message', function(message) {
-			console.log(message);
-			if (message.type == 'utf8') {
-				var content = JSON.parse(message.utf8Data);
-				switch (content.type) {
-					case 'move':
-						processMove(content.coords, index);
-						break;
-					default:
-						break;
-				}
+	var Game = function() {
+		var indexes = [0, 1];
+		var colors = ['blue', 'red'];
+		var shapes = ['cross', 'circle'];
+		var grid = [];
+		var nextTurn = -1;
+		var running = false;
+		
+		var players = [];
+		var playersData = [];
+		
+		this.newPlayer = function() {
+			if (indexes.length == 0) return;
+			var index = indexes.shift();
+			
+			player.index = index;
+			players[index] = player;
+			playersData[index] = {'color':colors.shift(), 'shape':shapes.shift()};
+			
+			var initMessage = {'type':'connection','index':index, 'players':playersData};
+			player.sendMessage(JSON.stringify(initMessage));
+			broadcast(players, JSON.stringify({'type':'newplayer', 'players':playersData}), index);
+			
+			if (indexes.length == 0) {
+				this.start();
+			} else {
+				broadcast(players, JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
 			}
-		});
-	
-	
-		connection.on('close', function() {
-			console.log('connection close');
+		};
+		
+		this.start = function() {
+			running = true;
+			nextTurn = 0;
+			grid = [[-1, -1, -1], [-1, -1, -1], [-1, -1,-1]];
+		
+			var message = {'type':'newgame', 'next':nextTurn};
+			message = JSON.stringify(message);
+			broadcast(players, message);
+		};
+		
+		this.processMove = function (coords, player)
+		{
+			if (!running) {
+				var message = {'type':'message','text':'The game did not begin yet.'};
+				message = JSON.stringify(message);
+				player.sendMessage(message);
+				return;
+			}
+			if (nextTurn != player.index) {
+				var message = {'type':'message','text':'Its not your turn to play.'};
+				message = JSON.stringify(message);
+				player.sendMessage(message);
+				return;
+			}
+		
+			if (grid[coords.x][coords.y] == -1) {
+				grid[coords.x][coords.y] = player.index;
+				nextTurn++;
+				nextTurn %= 2;
+		
+				var win = checkWin(grid);
+				var message = {
+					'type':'move',
+					'coords':coords,
+					'index':player.index,
+					'next':nextTurn,
+					'win':win
+				};
+				message = JSON.stringify(message);
+				broadcast(players, message);
+		
+				if (win != -1) {
+					running = false;
+				}
+		
+			} else {
+				var message = {'type':'message','text':'Move is not allowed'};
+				message = JSON.stringify(message);
+				player.sendMessage(message);
+			}
+		};
+		
+		this.onPlayerQuit = function(player) {
+			index = player.index;
+			
 			colors.push(playersData[index].color);
 			shapes.push(playersData[index].shape);
-			indexes.push(index);
-			nextTurn = -1;
-			gameRunning = false;
-	
+			
 			players[index] = null;
 			playersData[index] = null;
+			
+			indexes.push(index);
+			nextTurn = -1;
+			running = false;
+		};
+	};
 	
-			console.log(playersData);
-		});
-	}
-
-	function newGame()
-	{
-		gameRunning = true;
-		nextTurn = 0;
-		grid = [[-1, -1, -1], [-1, -1, -1], [-1, -1,-1]];
-	
-		var message = {'type':'newgame', 'next':nextTurn};
-		message = JSON.stringify(message);
-		broadcast(message);
+	function getGameInstance() {
+		if (game == undefined) game = new Game();
+		return game;
 	}
 	
-	function processMove(coords, playerIndex)
-	{
-		if (!gameRunning) {
-			var message = {'type':'message','text':'The game did not begin yet.'};
-			message = JSON.stringify(message);
-			players[playerIndex].sendUTF(message);
-			return;
-		}
-		if (nextTurn != playerIndex) {
-			var message = {'type':'message','text':'Its not your turn to play.'};
-			message = JSON.stringify(message);
-			players[playerIndex].sendUTF(message);
-			return;
-		}
+	this.initConnection = function(request) {
+		console.log('client connection');
+		
+		var connection = request.accept(null, request.origin);
+		player = new Player(connection);
+		
+		var game = getGameInstance();
+		game.newPlayer(player);
+		
+		connection.on('message', manageMessage);
+		connection.on('close', manageClose);
+	};
 	
-		if (grid[coords.x][coords.y] == -1) {
-			grid[coords.x][coords.y] = playerIndex;
-			nextTurn++;
-			nextTurn %= 2;
-	
-			var win = checkWin();
-			var message = {
-				'type':'move',
-				'coords':coords,
-				'index':playerIndex,
-				'next':nextTurn,
-				'win':win};
-			message = JSON.stringify(message);
-			broadcast(message);
-	
-			if (win != -1) {
-				gameRunning = false;
+	function manageMessage(message) {
+		console.log(message);
+		if (message.type == 'utf8') {
+			var content = JSON.parse(message.utf8Data);
+			switch (content.type) {
+				case 'move':
+					game.processMove(content.coords, this.player);
+					break;
+				default:
+					break;
 			}
-	
-		} else {
-			var message = {'type':'message','text':'Move is not allowed'};
-			message = JSON.stringify(message);
-			players[playerIndex].sendUTF(message);
 		}
 	}
-
-	function checkWin()
+	
+	function manageClose() {
+		console.log('connection close');
+		game.onPlayerQuit(this.player);
+	}
+	
+	function checkWin(grid)
 	{
 		var current = -1;
 		// check columns
@@ -187,11 +222,11 @@ var tictactoe = function() {
 		return -1;
 	}
 
-	function broadcast(message, exceptIndex)
+	function broadcast(players, message, exceptIndex)
 	{
 		for (var i = 0; i < players.length; i++) {
 			if (i != exceptIndex && players[i] != null)
-				players[i].sendUTF(message);
+				players[i].sendMessage(message);
 		}
 	}
 }
