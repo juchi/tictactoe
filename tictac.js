@@ -1,11 +1,13 @@
 var tictactoe = function() {
-	var game;
+	
+	var games = [];
 	
 	var Player = function(socket) {
 		var connection = socket;
 		connection.player = this;
 		
 		this.index = 0;
+		this.game = null;
 		
 		this.sendMessage = function(message) {
 			connection.sendUTF(message);
@@ -28,6 +30,7 @@ var tictactoe = function() {
 			var index = indexes.shift();
 			
 			player.index = index;
+			player.game = this;
 			players[index] = player;
 			playersData[index] = {'color':colors.shift(), 'shape':shapes.shift()};
 			
@@ -50,6 +53,10 @@ var tictactoe = function() {
 			var message = {'type':'newgame', 'next':nextTurn};
 			message = JSON.stringify(message);
 			broadcast(players, message);
+		};
+		
+		this.hasFreeSlot = function() {
+			return indexes.length > 0;
 		};
 		
 		this.processMove = function (coords, player)
@@ -96,6 +103,7 @@ var tictactoe = function() {
 		
 		this.onPlayerQuit = function(player) {
 			index = player.index;
+			player.game = null;
 			
 			colors.push(playersData[index].color);
 			shapes.push(playersData[index].shape);
@@ -110,7 +118,14 @@ var tictactoe = function() {
 	};
 	
 	function getGameInstance() {
-		if (game == undefined) game = new Game();
+		for (var i = 0; i < games.length; i++) {
+			if (games[i].hasFreeSlot()) {
+				return games[i];
+			}
+		}
+		
+		var game = new Game();
+		games.push(game);
 		return game;
 	}
 	
@@ -133,6 +148,7 @@ var tictactoe = function() {
 			var content = JSON.parse(message.utf8Data);
 			switch (content.type) {
 				case 'move':
+					var game = this.player.game;
 					game.processMove(content.coords, this.player);
 					break;
 				default:
@@ -143,7 +159,8 @@ var tictactoe = function() {
 	
 	function manageClose() {
 		console.log('connection close');
-		game.onPlayerQuit(this.player);
+		
+		this.player.game.onPlayerQuit(this.player);
 	}
 	
 	function checkWin(grid)
