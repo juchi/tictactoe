@@ -119,6 +119,9 @@ var tictactoe = function() {
             indexes.push(index);
             nextTurn = -1;
             running = false;
+
+            var message = {'type':'endgame', 'text':'The player '+ index + 'quit the game.'};
+            this.broadcast(JSON.stringify(message));
         };
 
         this.broadcast = function(message) {
