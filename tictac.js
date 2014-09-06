@@ -9,10 +9,13 @@ var tictactoe = function() {
 
         this.index = 0;
         this.game = null;
+        this.color = null;
+        this.shape = null;
 
         this.sendMessage = function(message) {
             connection.sendText(message);
         };
+
     };
 
     var Game = function() {
@@ -24,7 +27,6 @@ var tictactoe = function() {
         var running = false;
 
         this.players = [];
-        var playersData = [];
 
         this.newPlayer = function(player) {
             if (indexes.length == 0) {
@@ -34,12 +36,13 @@ var tictactoe = function() {
 
             player.index = index;
             player.game = this;
+            player.color = colors.shift();
+            player.shape = shapes.shift();
             this.players[index] = player;
-            playersData[index] = {'color':colors.shift(), 'shape':shapes.shift()};
 
-            var initMessage = {'type':'connection', 'index':index, 'players':playersData};
+            var initMessage = {'type':'connection', 'index':index, 'players':this.getPlayersData()};
             player.sendMessage(JSON.stringify(initMessage));
-            this.broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':playersData}));
+            this.broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':this.getPlayersData()}));
 
             if (indexes.length == 0) {
                 this.start();
@@ -48,6 +51,16 @@ var tictactoe = function() {
             }
 
             return true;
+        };
+
+        this.getPlayersData = function() {
+            var data = [];
+            for (var i in this.players) {
+                if (this.players[i] != null) {
+                    data[i] = {color:this.players[i].color, shape:this.players[i].shape};
+                }
+            }
+            return data;
         };
 
         this.start = function() {
@@ -110,11 +123,10 @@ var tictactoe = function() {
             var index = player.index;
             player.game = null;
 
-            colors.push(playersData[index].color);
-            shapes.push(playersData[index].shape);
+            colors.push(player.color);
+            shapes.push(player.shape);
 
             this.players[index] = null;
-            playersData[index] = null;
 
             indexes.push(index);
             nextTurn = -1;
