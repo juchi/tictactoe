@@ -13,41 +13,8 @@
         <canvas id="canvas">Your browser does not seem to support canvas.</canvas>
 
         <script type="text/javascript">
-        var playerIndex;
         var canvas = document.getElementById('canvas');
-        var tictactoe = new Tictactoe();
-        tictactoe.init(canvas);
-
-        var connection = new WebSocket('ws://'+location.hostname+':8081');
-
-        connection.onopen = function() {
-            $('#conn-status').text('Connected');
-        };
-
-        connection.onclose = function() {
-            $('#conn-status').text('Disconnected');
-        };
-
-        connection.onmessage = function(message){
-            console.log(message.data);
-            message = JSON.parse(message.data);
-            var action = message.type;
-            try {
-                tictactoe.runAction(action, message);
-            } catch (e) {
-                console.log(e);
-            }
-        };
-
-        $('#canvas').on('click', function(event) {
-            var x = event.pageX - canvas.offsetLeft;
-            var y = event.pageY - canvas.offsetTop;
-            var cellCoords = tictactoe.getCellFromPosition({'x':x, 'y':y});
-
-            var json = {'type': 'move','coords': cellCoords};
-            json = JSON.stringify(json);
-            connection.send(json);
-        });
+        var tictactoe = new Tictactoe(canvas);
         </script>
     </body>
 </html>

@@ -1,22 +1,63 @@
-"use strict";
-
 (function() {
-var tictactoe = function() {
-
+"use strict";
+var tictactoe = function(canvas) {
+    this.init(canvas);
 };
 tictactoe.prototype = {
+    canvas: null,
     ctx: null,
+    connection: null,
     cellSize: 50,
     playerColors: ['blue', 'red'],
     grid: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
     players: [{shape:'cross', color:'blue'}, {shape:'circle', color:'red'}],
+    playerIndex: -1,
 
     init: function(canvas) {
-        this.ctx = canvas.getContext('2d');
+        this.canvas = canvas;
+        this.ctx = this.canvas.getContext('2d');
         canvas.width = this.cellSize * 3;
         canvas.height = this.cellSize * 3;
 
         this.drawGrid();
+        this.initConnection();
+    },
+
+    initConnection: function() {
+        var that = this;
+        var connection = new WebSocket('ws://'+location.hostname+':8081');
+
+        connection.onopen = function() {
+            $('#conn-status').text('Connected');
+        };
+
+        connection.onclose = function() {
+            $('#conn-status').text('Disconnected');
+        };
+
+        connection.onmessage = function(message){
+            console.log(message.data);
+            message = JSON.parse(message.data);
+            var action = message.type;
+            try {
+                that.runAction(action, message);
+            } catch (e) {
+                console.log(e);
+            }
+        };
+        this.connection = connection;
+
+        $(this.canvas).on('click', this.onClick.bind(this));
+    },
+
+    onClick: function(event) {
+        var x = event.pageX - this.canvas.offsetLeft;
+        var y = event.pageY - this.canvas.offsetTop;
+        var cellCoords = this.getCellFromPosition({'x':x, 'y':y});
+
+        var json = {'type': 'move','coords': cellCoords};
+        json = JSON.stringify(json);
+        this.connection.send(json);
     },
 
     drawGrid: function() {
@@ -95,7 +136,7 @@ tictactoe.prototype = {
         var that = this;
         var actions = {
             connection: function (message) {
-                playerIndex = message.index;
+                that.playerIndex = message.index;
                 that.players = message.players;
             },
             newplayer: function (message) {
@@ -104,7 +145,7 @@ tictactoe.prototype = {
             },
             newgame: function (message) {
                 var info = 'The game starts now<br/>';
-                if (message.next == playerIndex) {
+                if (message.next == that.playerIndex) {
                     info += 'Your turn to play';
                 } else {
                     info += 'Waiting for player ' + message.next;
@@ -117,13 +158,13 @@ tictactoe.prototype = {
                 var winner = message.win;
                 var info = '';
                 if (winner != -1) {
-                    if (winner == playerIndex) {
+                    if (winner == that.playerIndex) {
                         info = 'You won !';
                     } else {
                         info = 'Player ' + winner + ' won !';
                     }
                 } else {
-                    if (message.next == playerIndex) {
+                    if (message.next == that.playerIndex) {
                         info = 'Your turn to play';
                     } else {
                         info = 'Waiting for player ' + message.next;
