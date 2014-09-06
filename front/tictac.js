@@ -8,9 +8,7 @@ tictactoe.prototype = {
     ctx: null,
     connection: null,
     cellSize: 50,
-    playerColors: ['blue', 'red'],
-    grid: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-    players: [{shape:'cross', color:'blue'}, {shape:'circle', color:'red'}],
+    players: [],
     playerIndex: -1,
 
     init: function(canvas) {
