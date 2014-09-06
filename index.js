@@ -1,5 +1,5 @@
 var http = require('http'),
-	Websocket = require('../node_modules/websocket').server,
+	Websocket = require('websocket').server,
 	server = require('./server'),
 	tictac = require('./tictac');
 
