@@ -19,7 +19,8 @@ tictactoe.prototype = {
         canvas.width = this.cellSize * 3;
         canvas.height = this.cellSize * 3;
 
-        this.drawGrid();
+        $(this.canvas).on('click', this.onClick.bind(this));
+
         this.initConnection();
     },
 
@@ -47,7 +48,6 @@ tictactoe.prototype = {
         };
         this.connection = connection;
 
-        $(this.canvas).on('click', this.onClick.bind(this));
     },
 
     onClick: function(event) {
