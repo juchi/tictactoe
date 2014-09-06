@@ -1,54 +1,54 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Tic tac toe</title>
-		<script type="text/javascript" src="jquery-1.9.1.min.js"></script>
-		<script type="text/javascript" src="tictac.js"></script>
-		<link rel="stylesheet" type="text/css" href="styles.css"/>
-	</head>
-	<body>
-		<h1>Tic tac toe</h1>
-		<p id="conn-status">Connecting...</p>
-		<p id="game-info"></p>
-		<canvas id="canvas">Your browser does not seem to support canvas.</canvas>
+    <head>
+        <title>Tic tac toe</title>
+        <script type="text/javascript" src="jquery-1.9.1.min.js"></script>
+        <script type="text/javascript" src="tictac.js"></script>
+        <link rel="stylesheet" type="text/css" href="styles.css"/>
+    </head>
+    <body>
+        <h1>Tic tac toe</h1>
+        <p id="conn-status">Connecting...</p>
+        <p id="game-info"></p>
+        <canvas id="canvas">Your browser does not seem to support canvas.</canvas>
 
-		<script type="text/javascript">
-		var playerIndex;
-		var canvas = document.getElementById('canvas');
-		tictactoe.init(canvas);
+        <script type="text/javascript">
+        var playerIndex;
+        var canvas = document.getElementById('canvas');
+        tictactoe.init(canvas);
 
-		var connection = new WebSocket('ws://'+location.hostname+':8081');
+        var connection = new WebSocket('ws://'+location.hostname+':8081');
 
-		connection.onopen = function() {
-			$('#conn-status').text('Connected');
-		};
+        connection.onopen = function() {
+            $('#conn-status').text('Connected');
+        };
 
-		connection.onclose = function() {
-			$('#conn-status').text('Disconnected');
-		};
+        connection.onclose = function() {
+            $('#conn-status').text('Disconnected');
+        };
 
-		connection.onmessage = function(message){
-			console.log(message.data);
-			message = JSON.parse(message.data);
-			var action = message.type;
-			try {
-				tictactoe.actions[action](message);
-			} catch (e) {
-				console.log(e);
-			}
+        connection.onmessage = function(message){
+            console.log(message.data);
+            message = JSON.parse(message.data);
+            var action = message.type;
+            try {
+                tictactoe.actions[action](message);
+            } catch (e) {
+                console.log(e);
+            }
 
-		};
+        };
 
-		$('#canvas').on('click', function(event) {
-			var x = event.pageX - canvas.offsetLeft;
-			var y = event.pageY - canvas.offsetTop;
-			var cellCoords = tictactoe.getCellFromPosition({'x':x, 'y':y});
+        $('#canvas').on('click', function(event) {
+            var x = event.pageX - canvas.offsetLeft;
+            var y = event.pageY - canvas.offsetTop;
+            var cellCoords = tictactoe.getCellFromPosition({'x':x, 'y':y});
 
-			var json = {'type': 'move','coords': cellCoords};
-			json = JSON.stringify(json);
-			connection.send(json);
-		});
-		</script>
-	</body>
+            var json = {'type': 'move','coords': cellCoords};
+            json = JSON.stringify(json);
+            connection.send(json);
+        });
+        </script>
+    </body>
 </html>
 
