@@ -35,9 +35,9 @@ var tictactoe = function() {
             players[index] = player;
             playersData[index] = {'color':colors.shift(), 'shape':shapes.shift()};
 
-            var initMessage = {'type':'connection','index':index, 'players':playersData};
+            var initMessage = {'type':'connection', 'index':index, 'players':playersData};
             player.sendMessage(JSON.stringify(initMessage));
-            broadcast(players, JSON.stringify({'type':'newplayer', 'players':playersData}), index);
+            broadcast(players, JSON.stringify({'type':'newplayer', 'index':index, 'players':playersData}));
 
             if (indexes.length == 0) {
                 this.start();
@@ -237,11 +237,12 @@ var tictactoe = function() {
         return -1;
     }
 
-    function broadcast(players, message, exceptIndex)
+    function broadcast(players, message)
     {
         for (var i = 0; i < players.length; i++) {
-            if (i != exceptIndex && players[i] != null)
+            if (players[i] != null) {
                 players[i].sendMessage(message);
+            }
         }
     }
 }

@@ -140,6 +140,9 @@ tictactoe.prototype = {
                 that.players = message.players;
             },
             newplayer: function (message) {
+                if (message.index == that.playerIndex) {
+                    return;
+                }
                 that.players = message.players;
                 $('#game-info').text('A new player just connected');
             },
