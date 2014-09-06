@@ -27,7 +27,9 @@ var tictactoe = function() {
         var playersData = [];
 
         this.newPlayer = function(player) {
-            if (indexes.length == 0) return;
+            if (indexes.length == 0) {
+                return false;
+            }
             var index = indexes.shift();
 
             player.index = index;
@@ -44,6 +46,8 @@ var tictactoe = function() {
             } else {
                 broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
             }
+
+            return true;
         };
 
         this.start = function() {
@@ -133,13 +137,16 @@ var tictactoe = function() {
     this.initConnection = function(connection) {
         console.log('client connection');
 
+        connection.on('text', manageMessage);
+        connection.on('close', manageClose);
+
         var player = new Player(connection);
 
         var game = getGameInstance();
-        game.newPlayer(player);
-
-        connection.on('text', manageMessage);
-        connection.on('close', manageClose);
+        var accepted = game.newPlayer(player);
+        if (!accepted) {
+            connection.close();
+        }
     };
 
     function manageMessage(message) {
