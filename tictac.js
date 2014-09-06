@@ -39,12 +39,12 @@ var tictactoe = function() {
 
             var initMessage = {'type':'connection', 'index':index, 'players':playersData};
             player.sendMessage(JSON.stringify(initMessage));
-            broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':playersData}));
+            this.broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':playersData}));
 
             if (indexes.length == 0) {
                 this.start();
             } else {
-                broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
+                this.broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
             }
 
             return true;
@@ -57,7 +57,7 @@ var tictactoe = function() {
 
             var message = {'type':'newgame', 'next':nextTurn};
             message = JSON.stringify(message);
-            broadcast(message);
+            this.broadcast(message);
         };
 
         this.hasFreeSlot = function() {
@@ -93,7 +93,7 @@ var tictactoe = function() {
                     'win':win
                 };
                 message = JSON.stringify(message);
-                broadcast(players, message);
+                this.broadcast(message);
 
                 if (win != -1) {
                     running = false;
@@ -114,12 +114,20 @@ var tictactoe = function() {
             shapes.push(playersData[index].shape);
 
             this.players[index] = null;
-            this.playersData[index] = null;
+            playersData[index] = null;
 
             indexes.push(index);
             nextTurn = -1;
             running = false;
         };
+
+        this.broadcast = function(message) {
+            for (var i = 0; i < this.players.length; i++) {
+                if (this.players[i] != null) {
+                    this.players[i].sendMessage(message);
+                }
+            }
+        }
     };
 
     function getGameInstance() {
@@ -242,15 +250,6 @@ var tictactoe = function() {
         }
 
         return -1;
-    }
-
-    function broadcast(message)
-    {
-        for (var i = 0; i < this.players.length; i++) {
-            if (this.players[i] != null) {
-                this.players[i].sendMessage(message);
-            }
-        }
     }
 }
 
