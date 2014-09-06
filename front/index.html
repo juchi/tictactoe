@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Ti tac toe</title>
+		<title>Tic tac toe</title>
 		<script type="text/javascript" src="jquery-1.9.1.min.js"></script>
 		<script type="text/javascript" src="tictac.js"></script>
 		<link rel="stylesheet" type="text/css" href="styles.css"/>
@@ -17,7 +17,7 @@
 		var canvas = document.getElementById('canvas');
 		tictactoe.init(canvas);
 
-		var connection = new WebSocket('ws://'+location.host);
+		var connection = new WebSocket('ws://'+location.hostname+':8081');
 
 		connection.onopen = function() {
 			$('#conn-status').text('Connected');
@@ -36,7 +36,7 @@
 			} catch (e) {
 				console.log(e);
 			}
-			
+
 		};
 
 		$('#canvas').on('click', function(event) {

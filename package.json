@@ -8,6 +8,6 @@
         "url": "http://github.com/juchi/tictactoe.git"
     },
     "dependencies": {
-        "websocket":"1.x"
+        "nodejs-websocket":"1.x"
     }
 }

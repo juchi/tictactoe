@@ -1,19 +1,18 @@
 var tictactoe = function() {
-	
+
 	var games = [];
-	
-	var Player = function(socket) {
-		var connection = socket;
+
+	var Player = function(connection) {
 		connection.player = this;
-		
+
 		this.index = 0;
 		this.game = null;
-		
+
 		this.sendMessage = function(message) {
-			connection.sendUTF(message);
+			connection.sendText(message);
 		};
 	};
-	
+
 	var Game = function() {
 		var indexes = [0, 1];
 		var colors = ['blue', 'red'];
@@ -21,46 +20,46 @@ var tictactoe = function() {
 		var grid = [];
 		var nextTurn = -1;
 		var running = false;
-		
+
 		var players = [];
 		var playersData = [];
-		
+
 		this.newPlayer = function() {
 			if (indexes.length == 0) return;
 			var index = indexes.shift();
-			
+
 			player.index = index;
 			player.game = this;
 			players[index] = player;
 			playersData[index] = {'color':colors.shift(), 'shape':shapes.shift()};
-			
+
 			var initMessage = {'type':'connection','index':index, 'players':playersData};
 			player.sendMessage(JSON.stringify(initMessage));
 			broadcast(players, JSON.stringify({'type':'newplayer', 'players':playersData}), index);
-			
+
 			if (indexes.length == 0) {
 				this.start();
 			} else {
 				broadcast(players, JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
 			}
 		};
-		
+
 		this.start = function() {
 			running = true;
 			nextTurn = 0;
 			grid = [[-1, -1, -1], [-1, -1, -1], [-1, -1,-1]];
-		
+
 			var message = {'type':'newgame', 'next':nextTurn};
 			message = JSON.stringify(message);
 			broadcast(players, message);
 		};
-		
+
 		this.hasFreeSlot = function() {
 			return indexes.length > 0;
 		};
-		
+
 		this.processMove = function (coords, player)
-		{
+		{console.log('processmove');
 			if (!running) {
 				var message = {'type':'message','text':'The game did not begin yet.'};
 				message = JSON.stringify(message);
@@ -73,12 +72,12 @@ var tictactoe = function() {
 				player.sendMessage(message);
 				return;
 			}
-		
+
 			if (grid[coords.x][coords.y] == -1) {
 				grid[coords.x][coords.y] = player.index;
 				nextTurn++;
 				nextTurn %= 2;
-		
+
 				var win = checkWin(grid);
 				var message = {
 					'type':'move',
@@ -89,80 +88,77 @@ var tictactoe = function() {
 				};
 				message = JSON.stringify(message);
 				broadcast(players, message);
-		
+
 				if (win != -1) {
 					running = false;
 				}
-		
+
 			} else {
 				var message = {'type':'message','text':'Move is not allowed'};
 				message = JSON.stringify(message);
 				player.sendMessage(message);
 			}
 		};
-		
+
 		this.onPlayerQuit = function(player) {
 			index = player.index;
 			player.game = null;
-			
+
 			colors.push(playersData[index].color);
 			shapes.push(playersData[index].shape);
-			
+
 			players[index] = null;
 			playersData[index] = null;
-			
+
 			indexes.push(index);
 			nextTurn = -1;
 			running = false;
 		};
 	};
-	
+
 	function getGameInstance() {
 		for (var i = 0; i < games.length; i++) {
 			if (games[i].hasFreeSlot()) {
 				return games[i];
 			}
 		}
-		
+
 		var game = new Game();
 		games.push(game);
 		return game;
 	}
-	
-	this.initConnection = function(request) {
+
+	this.initConnection = function(connection) {
 		console.log('client connection');
-		
-		var connection = request.accept(null, request.origin);
+
 		player = new Player(connection);
-		
+
 		var game = getGameInstance();
 		game.newPlayer(player);
-		
-		connection.on('message', manageMessage);
+
+		connection.on('text', manageMessage);
 		connection.on('close', manageClose);
 	};
-	
+
 	function manageMessage(message) {
-		console.log(message);
-		if (message.type == 'utf8') {
-			var content = JSON.parse(message.utf8Data);
-			switch (content.type) {
-				case 'move':
-					var game = this.player.game;
-					game.processMove(content.coords, this.player);
-					break;
-				default:
-					break;
-			}
-		}
+        console.log(message);
+        message = JSON.parse(message);
+        switch (message.type) {
+            case 'move':
+                var game = this.player.game;
+                game.processMove(message.coords, this.player);
+                break;
+            default:
+                break;
+        }
 	}
-	
+
 	function manageClose() {
 		console.log('connection close');
-		
+
 		this.player.game.onPlayerQuit(this.player);
 	}
-	
+
 	function checkWin(grid)
 	{
 		var current = -1;
@@ -184,7 +180,7 @@ var tictactoe = function() {
 				}
 			}
 		}
-	
+
 		// check lines
 		for (var i = 0; i < grid.length; i++) {
 			for (var j = 0; j < grid.length; j++) {
@@ -203,7 +199,7 @@ var tictactoe = function() {
 				}
 			}
 		}
-	
+
 		// check diags
 		for (var i = 0; i < grid.length; i++) {
 			if (grid[i][i] == -1) {
@@ -235,7 +231,7 @@ var tictactoe = function() {
 				break;
 			}
 		}
-	
+
 		return -1;
 	}
 

@@ -1,10 +1,12 @@
 var http = require('http'),
-	Websocket = require('websocket').server,
-	server = require('./server'),
-	tictac = require('./tictac');
+    ws = require('nodejs-websocket'),
+    server = require('./server'),
+    tictac = require('./tictac');
 
+http.createServer(server.onRequest).listen(8080);
 
-var httpserver = http.createServer(server.onRequest).listen(8080);
-ws = new Websocket({httpServer:httpserver});
 var t = new tictac.tictactoe();
-ws.on('request', t.initConnection);
+var wsserver = ws.createServer(function(connection) {
+    t.initConnection(connection);
+});
+wsserver.listen(8081);
