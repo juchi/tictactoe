@@ -23,7 +23,7 @@ var tictactoe = function() {
         var nextTurn = -1;
         var running = false;
 
-        var players = [];
+        this.players = [];
         var playersData = [];
 
         this.newPlayer = function(player) {
@@ -32,17 +32,17 @@ var tictactoe = function() {
 
             player.index = index;
             player.game = this;
-            players[index] = player;
+            this.players[index] = player;
             playersData[index] = {'color':colors.shift(), 'shape':shapes.shift()};
 
             var initMessage = {'type':'connection', 'index':index, 'players':playersData};
             player.sendMessage(JSON.stringify(initMessage));
-            broadcast(players, JSON.stringify({'type':'newplayer', 'index':index, 'players':playersData}));
+            broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':playersData}));
 
             if (indexes.length == 0) {
                 this.start();
             } else {
-                broadcast(players, JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
+                broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
             }
         };
 
@@ -53,7 +53,7 @@ var tictactoe = function() {
 
             var message = {'type':'newgame', 'next':nextTurn};
             message = JSON.stringify(message);
-            broadcast(players, message);
+            broadcast(message);
         };
 
         this.hasFreeSlot = function() {
@@ -109,8 +109,8 @@ var tictactoe = function() {
             colors.push(playersData[index].color);
             shapes.push(playersData[index].shape);
 
-            players[index] = null;
-            playersData[index] = null;
+            this.players[index] = null;
+            this.playersData[index] = null;
 
             indexes.push(index);
             nextTurn = -1;
@@ -237,11 +237,11 @@ var tictactoe = function() {
         return -1;
     }
 
-    function broadcast(players, message)
+    function broadcast(message)
     {
-        for (var i = 0; i < players.length; i++) {
-            if (players[i] != null) {
-                players[i].sendMessage(message);
+        for (var i = 0; i < this.players.length; i++) {
+            if (this.players[i] != null) {
+                this.players[i].sendMessage(message);
             }
         }
     }
