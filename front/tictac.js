@@ -1,3 +1,5 @@
+"use strict";
+
 var tictactoe = {
     ctx: null,
     cellSize: 50,
@@ -52,8 +54,8 @@ var tictactoe = {
     },
 
     drawPiece: function(coords, playerIndex) {
-        drawFunction = this.drawFunctions[players[playerIndex].shape];
-        drawFunction(this.getTopLeftPosition(coords), players[playerIndex].color);
+        var drawFunction = this.drawFunctions[tictactoe.players[playerIndex].shape];
+        drawFunction(this.getTopLeftPosition(coords), tictactoe.players[playerIndex].color);
     },
 
 
@@ -87,10 +89,10 @@ var tictactoe = {
     actions: {
         connection: function(message) {
             playerIndex = message.index;
-            players = message.players;
+            tictactoe.players = message.players;
         },
         newplayer: function(message) {
-            players = message.players;
+            tictactoe.players = message.players;
             $('#game-info').text('A new player just connected');
         },
         newgame: function(message) {

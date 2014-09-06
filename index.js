@@ -1,3 +1,5 @@
+"use strict";
+
 var http = require('http'),
     ws = require('nodejs-websocket'),
     server = require('./server'),

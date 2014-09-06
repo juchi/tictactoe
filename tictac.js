@@ -1,3 +1,5 @@
+"use strict";
+
 var tictactoe = function() {
 
     var games = [];
@@ -24,7 +26,7 @@ var tictactoe = function() {
         var players = [];
         var playersData = [];
 
-        this.newPlayer = function() {
+        this.newPlayer = function(player) {
             if (indexes.length == 0) return;
             var index = indexes.shift();
 
@@ -59,7 +61,7 @@ var tictactoe = function() {
         };
 
         this.processMove = function (coords, player)
-        {console.log('processmove');
+        {
             if (!running) {
                 var message = {'type':'message','text':'The game did not begin yet.'};
                 message = JSON.stringify(message);
@@ -101,7 +103,7 @@ var tictactoe = function() {
         };
 
         this.onPlayerQuit = function(player) {
-            index = player.index;
+            var index = player.index;
             player.game = null;
 
             colors.push(playersData[index].color);
@@ -131,7 +133,7 @@ var tictactoe = function() {
     this.initConnection = function(connection) {
         console.log('client connection');
 
-        player = new Player(connection);
+        var player = new Player(connection);
 
         var game = getGameInstance();
         game.newPlayer(player);
