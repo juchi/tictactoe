@@ -1,0 +1,13 @@
+{
+    "name": "tictactoe",
+    "version": "0.1.0",
+    "license": "MIT",
+    "author": "Julien Chichignoud",
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/juchi/tictactoe.git"
+    },
+    "dependencies": {
+        "websocket":"1.x"
+    }
+}
