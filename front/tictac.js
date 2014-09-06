@@ -60,7 +60,13 @@ tictactoe.prototype = {
         this.connection.send(json);
     },
 
+    cleanCanvas: function() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+
     drawGrid: function() {
+        this.cleanCanvas();
+
         var ctx = this.ctx;
         ctx.strokeStyle = 'black';
         ctx.beginPath();
@@ -147,6 +153,7 @@ tictactoe.prototype = {
                 $('#game-info').text('A new player just connected');
             },
             newgame: function (message) {
+                that.drawGrid();
                 var info = 'The game starts now<br/>';
                 if (message.next == that.playerIndex) {
                     info += 'Your turn to play';
@@ -176,6 +183,9 @@ tictactoe.prototype = {
                 $('#game-info').text(info);
             },
             message: function (message) {
+                $('#game-info').text(message.text);
+            },
+            endgame: function(message) {
                 $('#game-info').text(message.text);
             }
         };
