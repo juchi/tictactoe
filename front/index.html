@@ -17,7 +17,7 @@
 		var canvas = document.getElementById('canvas');
 		tictactoe.init(canvas);
 
-		var connection = new WebSocket('ws://localhost:8080');
+		var connection = new WebSocket('ws://'+location.host);
 
 		connection.onopen = function() {
 			$('#conn-status').text('Connected');
