@@ -180,6 +180,10 @@ var tictactoe = function() {
                 var game = this.player.game;
                 game.processMove(message.coords, this.player);
                 break;
+            case 'newgame':
+                var game = this.player.game;
+                game.start();
+                break;
             default:
                 break;
         }

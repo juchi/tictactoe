@@ -18,6 +18,7 @@ tictactoe.prototype = {
         canvas.height = this.cellSize * 3;
 
         $(this.canvas).on('click', this.onClick.bind(this));
+        $('#new-game').on('click', this.playAgain.bind(this));
 
         this.initConnection();
     },
@@ -56,6 +57,11 @@ tictactoe.prototype = {
         var json = {'type': 'move','coords': cellCoords};
         json = JSON.stringify(json);
         this.connection.send(json);
+    },
+
+    playAgain: function(event) {
+        var message = {'type':'newgame'};
+        this.connection.send(JSON.stringify(message));
     },
 
     cleanCanvas: function() {
@@ -152,6 +158,7 @@ tictactoe.prototype = {
             },
             newgame: function (message) {
                 that.drawGrid();
+                $('#new-game').hide();
                 var info = 'The game starts now<br/>';
                 if (message.next == that.playerIndex) {
                     info += 'Your turn to play';
@@ -171,6 +178,9 @@ tictactoe.prototype = {
                     } else {
                         info = 'Player ' + winner + ' won !';
                     }
+                    message.text = info;
+                    actions.endgame(message);
+                    return;
                 } else {
                     if (message.next == that.playerIndex) {
                         info = 'Your turn to play';
@@ -185,6 +195,7 @@ tictactoe.prototype = {
             },
             endgame: function(message) {
                 $('#game-info').text(message.text);
+                $('#new-game').show();
             }
         };
         actions[action](message);
