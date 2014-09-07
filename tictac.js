@@ -109,7 +109,7 @@ var tictactoe = function() {
                 this.broadcast(message);
 
                 if (win != -1) {
-                    running = false;
+                    this.endGame('Player '+win+' win.');
                 }
 
             } else {
@@ -129,10 +129,15 @@ var tictactoe = function() {
             this.players[index] = null;
 
             indexes.push(index);
+
+            this.endGame('The player '+ index + 'quit the game.');
+        };
+
+        this.endGame = function(reason) {
             nextTurn = -1;
             running = false;
 
-            var message = {'type':'endgame', 'text':'The player '+ index + 'quit the game.'};
+            var message = {'type':'endgame', 'text':reason};
             this.broadcast(JSON.stringify(message));
         };
 
