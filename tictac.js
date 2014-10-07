@@ -6,146 +6,143 @@ var tictactoe = function() {
 
     var Player = function(connection) {
         connection.player = this;
+        this.connection = connection;
 
         this.index = 0;
         this.game = null;
         this.color = null;
         this.shape = null;
+    };
 
-        this.sendMessage = function(message) {
-            connection.sendText(message);
-        };
+    Player.prototype.sendData = function(message) {
+        this.connection.sendText(message);
+    };
 
+    Player.prototype.sendMessage = function(message) {
+        var json = {'type':'message', 'text':message};
+        this.sendData(JSON.stringify(json));
     };
 
     var Game = function() {
-        var indexes = [0, 1];
-        var colors = ['blue', 'red'];
-        var shapes = ['cross', 'circle'];
-        var grid = [];
-        var nextTurn = -1;
-        var running = false;
+        this.indexes = [0, 1];
+        this.colors = ['blue', 'red'];
+        this.shapes = ['cross', 'circle'];
+        this.grid = [];
+        this.nextTurn = -1;
+        this.running = false;
 
         this.players = [];
+    };
+    Game.prototype.newPlayer = function(player) {
+        if (this.indexes.length == 0) {
+            return false;
+        }
+        var index = this.indexes.shift();
 
-        this.newPlayer = function(player) {
-            if (indexes.length == 0) {
-                return false;
+        player.index = index;
+        player.game = this;
+        player.color = this.colors.shift();
+        player.shape = this.shapes.shift();
+        this.players[index] = player;
+
+        var initMessage = {'type':'connection', 'index':index, 'players':this.getPlayersData()};
+        player.sendData(JSON.stringify(initMessage));
+        this.broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':this.getPlayersData()}));
+
+        if (this.indexes.length == 0) {
+            this.start();
+        } else {
+            this.broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
+        }
+
+        return true;
+    };
+
+    Game.prototype.getPlayersData = function() {
+        var data = [];
+        for (var i in this.players) {
+            if (this.players[i] != null && this.players.hasOwnProperty(i)) {
+                data[i] = {color:this.players[i].color, shape:this.players[i].shape};
             }
-            var index = indexes.shift();
+        }
+        return data;
+    };
 
-            player.index = index;
-            player.game = this;
-            player.color = colors.shift();
-            player.shape = shapes.shift();
-            this.players[index] = player;
+    Game.prototype.start = function() {
+        this.running = true;
+        this.nextTurn = 0;
+        this.grid = [[-1, -1, -1], [-1, -1, -1], [-1, -1,-1]];
 
-            var initMessage = {'type':'connection', 'index':index, 'players':this.getPlayersData()};
-            player.sendMessage(JSON.stringify(initMessage));
-            this.broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':this.getPlayersData()}));
+        var message = {'type':'newgame', 'next':this.nextTurn};
+        message = JSON.stringify(message);
+        this.broadcast(message);
+    };
 
-            if (indexes.length == 0) {
-                this.start();
-            } else {
-                this.broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
-            }
+    Game.prototype.hasFreeSlot = function() {
+        return this.indexes.length > 0;
+    };
 
-            return true;
-        };
+    Game.prototype.processMove = function (coords, player)
+    {
+        if (!this.running) {
+            player.sendMessage('The game did not begin yet.');
+            return;
+        }
+        if (this.nextTurn != player.index) {
+            player.sendMessage('Its not your turn to play.');
+            return;
+        }
 
-        this.getPlayersData = function() {
-            var data = [];
-            for (var i in this.players) {
-                if (this.players[i] != null) {
-                    data[i] = {color:this.players[i].color, shape:this.players[i].shape};
-                }
-            }
-            return data;
-        };
+        if (this.grid[coords.x][coords.y] == -1) {
+            this.grid[coords.x][coords.y] = player.index;
+            this.nextTurn++;
+            this.nextTurn %= 2;
 
-        this.start = function() {
-            running = true;
-            nextTurn = 0;
-            grid = [[-1, -1, -1], [-1, -1, -1], [-1, -1,-1]];
-
-            var message = {'type':'newgame', 'next':nextTurn};
+            var win = checkWin(this.grid);
+            var message = {
+                'type':'move',
+                'coords':coords,
+                'index':player.index,
+                'next':this.nextTurn,
+                'win':win
+            };
             message = JSON.stringify(message);
             this.broadcast(message);
-        };
 
-        this.hasFreeSlot = function() {
-            return indexes.length > 0;
-        };
-
-        this.processMove = function (coords, player)
-        {
-            if (!running) {
-                var message = {'type':'message','text':'The game did not begin yet.'};
-                message = JSON.stringify(message);
-                player.sendMessage(message);
-                return;
-            }
-            if (nextTurn != player.index) {
-                var message = {'type':'message','text':'Its not your turn to play.'};
-                message = JSON.stringify(message);
-                player.sendMessage(message);
-                return;
+            if (win != -1) {
+                this.endGame('Player '+win+' win.');
             }
 
-            if (grid[coords.x][coords.y] == -1) {
-                grid[coords.x][coords.y] = player.index;
-                nextTurn++;
-                nextTurn %= 2;
+        } else {
+            player.sendMessage('Move is not allowed');
+        }
+    };
 
-                var win = checkWin(grid);
-                var message = {
-                    'type':'move',
-                    'coords':coords,
-                    'index':player.index,
-                    'next':nextTurn,
-                    'win':win
-                };
-                message = JSON.stringify(message);
-                this.broadcast(message);
+    Game.prototype.onPlayerQuit = function(player) {
+        var index = player.index;
+        player.game = null;
 
-                if (win != -1) {
-                    this.endGame('Player '+win+' win.');
-                }
+        this.colors.push(player.color);
+        this.shapes.push(player.shape);
 
-            } else {
-                var message = {'type':'message','text':'Move is not allowed'};
-                message = JSON.stringify(message);
-                player.sendMessage(message);
-            }
-        };
+        this.players[index] = null;
 
-        this.onPlayerQuit = function(player) {
-            var index = player.index;
-            player.game = null;
+        this.indexes.push(index);
 
-            colors.push(player.color);
-            shapes.push(player.shape);
+        this.endGame('The player '+ index + 'quit the game.');
+    };
 
-            this.players[index] = null;
+    Game.prototype.endGame = function(reason) {
+        this.nextTurn = -1;
+        this.running = false;
 
-            indexes.push(index);
-
-            this.endGame('The player '+ index + 'quit the game.');
-        };
-
-        this.endGame = function(reason) {
-            nextTurn = -1;
-            running = false;
-
-            var message = {'type':'endgame', 'text':reason};
-            this.broadcast(JSON.stringify(message));
-        };
-
-        this.broadcast = function(message) {
-            for (var i = 0; i < this.players.length; i++) {
-                if (this.players[i] != null) {
-                    this.players[i].sendMessage(message);
-                }
+        var message = {'type':'endgame', 'text':reason};
+        this.broadcast(JSON.stringify(message));
+    };
+    Game.prototype.broadcast = function(message) {
+        for (var i = 0; i < this.players.length; i++) {
+            if (this.players[i] != null) {
+                this.players[i].sendData(message);
             }
         }
     };
@@ -166,7 +163,7 @@ var tictactoe = function() {
         console.log('client connection');
 
         connection.on('text', manageMessage);
-        connection.on('close', manageClose);
+        connection.on('close', function(){manageClose(this);});
 
         var player = new Player(connection);
 
@@ -180,13 +177,14 @@ var tictactoe = function() {
     function manageMessage(message) {
         console.log(message);
         message = JSON.parse(message);
+        var game = null;
         switch (message.type) {
             case 'move':
-                var game = this.player.game;
+                game = this.player.game;
                 game.processMove(message.coords, this.player);
                 break;
             case 'newgame':
-                var game = this.player.game;
+                game = this.player.game;
                 game.start();
                 break;
             default:
@@ -194,10 +192,10 @@ var tictactoe = function() {
         }
     }
 
-    function manageClose() {
+    function manageClose(connection) {
         console.log('connection close');
 
-        this.player.game.onPlayerQuit(this.player);
+        connection.player.game.onPlayerQuit(connection.player);
     }
 
     function checkWin(grid)
@@ -275,6 +273,6 @@ var tictactoe = function() {
 
         return -1;
     }
-}
+};
 
 exports.tictactoe = tictactoe;
