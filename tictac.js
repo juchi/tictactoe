@@ -15,12 +15,15 @@ var tictactoe = function() {
     };
 
     Player.prototype.sendData = function(message) {
+        if (typeof message == 'object') {
+            message = JSON.stringify(message);
+        }
         this.connection.sendText(message);
     };
 
     Player.prototype.sendMessage = function(message) {
         var json = {'type':'message', 'text':message};
-        this.sendData(JSON.stringify(json));
+        this.sendData(json);
     };
 
     var Game = function() {
@@ -46,13 +49,13 @@ var tictactoe = function() {
         this.players[index] = player;
 
         var initMessage = {'type':'connection', 'index':index, 'players':this.getPlayersData()};
-        player.sendData(JSON.stringify(initMessage));
-        this.broadcast(JSON.stringify({'type':'newplayer', 'index':index, 'players':this.getPlayersData()}));
+        player.sendData(initMessage);
+        this.broadcast({'type':'newplayer', 'index':index, 'players':this.getPlayersData()});
 
         if (this.indexes.length == 0) {
             this.start();
         } else {
-            this.broadcast(JSON.stringify({'type':'message', 'text':'Waiting for another player...'}));
+            this.broadcast({'type':'message', 'text':'Waiting for another player...'});
         }
 
         return true;
@@ -74,7 +77,6 @@ var tictactoe = function() {
         this.grid = [[-1, -1, -1], [-1, -1, -1], [-1, -1,-1]];
 
         var message = {'type':'newgame', 'next':this.nextTurn};
-        message = JSON.stringify(message);
         this.broadcast(message);
     };
 
@@ -106,7 +108,6 @@ var tictactoe = function() {
                 'next':this.nextTurn,
                 'win':win
             };
-            message = JSON.stringify(message);
             this.broadcast(message);
 
             if (win != -1) {
@@ -136,8 +137,7 @@ var tictactoe = function() {
         this.nextTurn = -1;
         this.running = false;
 
-        var message = {'type':'endgame', 'text':reason};
-        this.broadcast(JSON.stringify(message));
+        this.broadcast({'type':'endgame', 'text':reason});
     };
     Game.prototype.broadcast = function(message) {
         for (var i = 0; i < this.players.length; i++) {
